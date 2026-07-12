@@ -1,0 +1,68 @@
+# Local dev stack for the services that actually exist today (patient-service,
+# lab-service) on a single Postgres instance with one schema per service, and
+# Redis Streams standing in for Kafka — see shared/sql/001_init.sql and
+# shared/EVENTS.md for why. Ports/services here will grow as audit-service,
+# analytics-service, notification-service, and api-gateway get built out.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: healthsync
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: healthsync
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./shared/sql/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthsync"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  patient-service:
+    build:
+      context: .
+      dockerfile: services/patient-service/Dockerfile
+    ports: ["8001:8001"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://healthsync:dev_password@postgres:5432/healthsync
+      DB_SCHEMA: patient
+      REDIS_URL: redis://redis:6379
+      JWT_PRIVATE_KEY_PATH: /secrets/jwt_private.pem
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./shared/keys:/secrets:ro
+
+  lab-service:
+    build:
+      context: .
+      dockerfile: services/lab-service/Dockerfile
+    ports: ["8002:8002"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://healthsync:dev_password@postgres:5432/healthsync
+      DB_SCHEMA: lab
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./shared/keys:/secrets:ro
+
+volumes:
+  pgdata:
