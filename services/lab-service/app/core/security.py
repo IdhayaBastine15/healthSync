@@ -10,10 +10,8 @@ from app.core.config import get_settings
 
 security = HTTPBearer()
 
-_CANDIDATES = [
-    Path(__file__).resolve().parents[2] / "shared" / "rbac.json",
-    Path(__file__).resolve().parents[4] / "shared" / "rbac.json",
-]
+_FILE = Path(__file__).resolve()
+_CANDIDATES = [_FILE.parents[n] / "shared" / "rbac.json" for n in (2, 4) if len(_FILE.parents) > n]
 RBAC = {"permissions": {}}
 for _candidate in _CANDIDATES:
     if _candidate.exists():

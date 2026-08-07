@@ -102,15 +102,21 @@ async def file_result(
         effective_at=body.effective_at,
         issued_at=body.issued_at,
     )
-    db.add(result)
-    await db.flush()
-    for obs in observations:
-        obs.result_id = result.id
-        db.add(obs)
-    await db.flush()
+    try:
+        db.add(result)
+        await db.flush()
+        for obs in observations:
+            obs.result_id = result.id
+            db.add(obs)
+        await db.flush()
 
-    result.fhir_resource = result_to_fhir(result, observations)
-    await db.commit()
+        result.fhir_resource = result_to_fhir(result, observations)
+        await db.commit()
+    except Exception:
+        # Release the dedup claim so a retry after a transient DB failure isn't
+        # permanently treated as a duplicate for the rest of the 24h window.
+        await redis.delete(f"lab:result:hash:{result_hash}")
+        raise
     await db.refresh(result)
 
     producer = StreamProducer(redis)

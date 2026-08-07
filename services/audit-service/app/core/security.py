@@ -1,9 +1,6 @@
 import json
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from uuid import uuid4
 
-import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -14,7 +11,7 @@ from app.core.config import get_settings
 security = HTTPBearer()
 
 # Container layout: /app/app/core/security.py + /app/shared/rbac.json (see Dockerfile).
-# Local (non-container) layout: services/patient-service/app/core/security.py + <repo>/shared/rbac.json.
+# Local (non-container) layout: services/audit-service/app/core/security.py + <repo>/shared/rbac.json.
 _FILE = Path(__file__).resolve()
 _CANDIDATES = [_FILE.parents[n] / "shared" / "rbac.json" for n in (2, 4) if len(_FILE.parents) > n]
 RBAC = {"permissions": {}}
@@ -24,35 +21,8 @@ for _candidate in _CANDIDATES:
         break
 
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
-
-
-def verify_password(password: str, password_hash: str) -> bool:
-    return bcrypt.checkpw(password.encode(), password_hash.encode())
-
-
-def _private_key() -> str:
-    return Path(get_settings().jwt_private_key_path).read_text()
-
-
 def _public_key() -> str:
     return Path(get_settings().jwt_public_key_path).read_text()
-
-
-def create_access_token(user_id: str, roles: list[str]) -> tuple[str, str]:
-    settings = get_settings()
-    jti = str(uuid4())
-    now = datetime.now(timezone.utc)
-    payload = {
-        "sub": user_id,
-        "roles": roles,
-        "jti": jti,
-        "iat": now,
-        "exp": now + timedelta(minutes=settings.access_token_expire_minutes),
-    }
-    token = jwt.encode(payload, _private_key(), algorithm=settings.jwt_algorithm)
-    return token, jti
 
 
 def decode_access_token(token: str) -> dict:
@@ -87,9 +57,7 @@ async def get_redis() -> Redis:
     return Redis.from_url(get_settings().redis_url, decode_responses=True)
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> CurrentUser:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> CurrentUser:
     payload = decode_access_token(credentials.credentials)
     redis = await get_redis()
     try:

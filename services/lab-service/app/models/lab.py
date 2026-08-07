@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -20,13 +20,13 @@ class LabResult(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     is_critical: Mapped[bool] = mapped_column(Boolean, default=False)
     acknowledged_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    acknowledged_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     acknowledge_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_system: Mapped[str] = mapped_column(String(200), nullable=False)
     result_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
-    effective_at: Mapped[datetime] = mapped_column(nullable=False)
-    issued_at: Mapped[datetime] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    effective_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Observation(Base):
@@ -43,4 +43,4 @@ class Observation(Base):
     reference_low: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     reference_high: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     interpretation: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
