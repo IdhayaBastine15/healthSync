@@ -7,11 +7,16 @@ __pycache__/
 
 # Node
 node_modules/
+dist/
+*.tsbuildinfo
 
 # Env / secrets
 .env
 .env.*
 !.env.example
+# Not a secret - just non-empty localhost defaults for `npm run dev`
+# (frontend/vite.config.ts's dev proxy expects api-gateway on :8000).
+!frontend/.env.development
 shared/keys/*.pem
 # The prod public key isn't secret (only the private key is) - it's meant to
 # ship in the image so lab/audit/analytics-service don't need it pasted

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { getSocket, joinPatientRoom } from '../services/socket'
+import type { Socket } from 'socket.io-client'
+import { onSocketReady, joinPatientRoom } from '../services/socket'
 import { useNotificationStore } from '../store/notificationStore'
 
 interface StreamEnvelope {
@@ -16,14 +17,16 @@ interface StreamEnvelope {
 }
 
 // Global critical-alert listener - mounted once in App.tsx so it survives
-// navigation regardless of which page is active.
+// navigation regardless of which page is active. Uses onSocketReady rather
+// than a one-shot getSocket() check since this can mount before
+// connectSocket() has run (e.g. on reload, before useAuth()'s effect fires).
+// Tracks every socket instance it has attached to (a reconnect mid-mount -
+// token refresh, re-login - hands back a new instance) so cleanup can
+// detach from all of them, not just the most recent.
 export function useCriticalAlerts() {
   const addCriticalAlert = useNotificationStore((s) => s.addCriticalAlert)
 
   useEffect(() => {
-    const socket = getSocket()
-    if (!socket) return
-
     const handler = (envelope: StreamEnvelope) => {
       addCriticalAlert({
         id: envelope.event_id,
@@ -33,9 +36,15 @@ export function useCriticalAlerts() {
       })
     }
 
-    socket.on('lab.result.critical', handler)
+    const attachedSockets: Socket[] = []
+    const unsubscribeReady = onSocketReady((socket) => {
+      socket.on('lab.result.critical', handler)
+      attachedSockets.push(socket)
+    })
+
     return () => {
-      socket.off('lab.result.critical', handler)
+      unsubscribeReady()
+      attachedSockets.forEach((socket) => socket.off('lab.result.critical', handler))
     }
   }, [addCriticalAlert])
 }
@@ -47,10 +56,6 @@ export function usePatientRoomEvents(patientId: string | undefined) {
 
   useEffect(() => {
     if (!patientId) return
-    const socket = getSocket()
-    if (!socket) return
-
-    joinPatientRoom(patientId)
 
     const onResultFiled = (envelope: StreamEnvelope) => {
       addToast({ id: envelope.event_id, message: `New lab result filed (${envelope.result_id ?? ''})` })
@@ -59,11 +64,20 @@ export function usePatientRoomEvents(patientId: string | undefined) {
       addToast({ id: envelope.event_id, message: 'This patient record was updated' })
     }
 
-    socket.on('lab.result.filed', onResultFiled)
-    socket.on('patient.record.updated', onPatientUpdated)
+    const attachedSockets: Socket[] = []
+    const unsubscribeReady = onSocketReady((socket) => {
+      joinPatientRoom(patientId)
+      socket.on('lab.result.filed', onResultFiled)
+      socket.on('patient.record.updated', onPatientUpdated)
+      attachedSockets.push(socket)
+    })
+
     return () => {
-      socket.off('lab.result.filed', onResultFiled)
-      socket.off('patient.record.updated', onPatientUpdated)
+      unsubscribeReady()
+      attachedSockets.forEach((socket) => {
+        socket.off('lab.result.filed', onResultFiled)
+        socket.off('patient.record.updated', onPatientUpdated)
+      })
     }
   }, [patientId, addToast])
 }
