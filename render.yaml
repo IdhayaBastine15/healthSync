@@ -162,12 +162,14 @@ services:
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    # Per Render's published render.yaml JSON Schema (render.com/schema/render.yaml.json),
-    # staticPublishPath is relative to the repo root even when rootDir is
-    # set (rootDir only scopes where buildCommand runs) - validated against
-    # that schema directly after the dashboard's Blueprint sync error didn't
-    # surface the actual problem.
-    staticPublishPath: ./frontend/dist
+    # The published JSON Schema's field description says this is "relative
+    # to the repo root" even with rootDir set, but that's wrong in practice:
+    # a live deploy with staticPublishPath=./frontend/dist build succeeded
+    # (dist/ was produced) but then failed with "Publish directory
+    # ./frontend/dist does not exist!" - rootDir actually scopes this path
+    # too, same as buildCommand's cwd. Relative to rootDir (frontend/), not
+    # the repo root.
+    staticPublishPath: ./dist
     envVars:
       - key: VITE_API_GATEWAY_URL
         value: https://healthsync-api-gateway.onrender.com
