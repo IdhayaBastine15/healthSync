@@ -157,8 +157,9 @@ services:
       - key: CORS_ORIGINS
         value: https://healthsync-frontend.onrender.com
 
-  - type: static
+  - type: web
     name: healthsync-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
@@ -168,6 +169,5 @@ services:
       - key: VITE_NOTIFICATION_SERVICE_URL
         value: https://healthsync-notification-service.onrender.com
     routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+      - src: /.*
+        dest: /index.html
