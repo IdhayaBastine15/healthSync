@@ -1,7 +1,7 @@
-# Render Blueprint — MVP deploy of the three services that are actually
-# built (patient-service, lab-service, audit-service) plus their shared
-# Postgres and Redis (Key Value). notification-service, api-gateway, and
-# frontend get added here once they exist.
+# Render Blueprint — the full stack: patient/lab/audit-service, api-gateway
+# (single entry point), notification-service (real-time critical alerts via
+# Socket.io), the React frontend (static site), and their shared Postgres and
+# Redis (Key Value). analytics-service is still out of scope.
 #
 # Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
 # JWT_PRIVATE_KEY is `sync: false` — Render will prompt for it once during
@@ -12,11 +12,21 @@
 # survive a round trip through a web form. Everything else wires up
 # automatically.
 #
+# api-gateway/notification-service reach patient/lab/audit-service via their
+# public onrender.com URLs rather than Render's internal service-to-service
+# networking — see the plan's "Deviations" section
+# (/Users/hirusidhu/.claude/plans/ancient-rolling-moler.md) for why; this is
+# proven to work (same URLs used for this project's live smoke tests) where
+# the internal-networking Blueprint field name isn't.
+#
 # Free-tier caveats: free Postgres expires 30 days after creation (needs a
 # manual upgrade or recreation before then); free Key Value data is
 # in-memory only and clears on restart (fine here — it's just cache +
 # stream/dedup state, nothing durable lives there); free web services spin
-# down after 15 min idle and cold-start on the next request.
+# down after 15 min idle and cold-start on the next request (api-gateway's
+# 60s proxy timeout covers this; the frontend's WebSocket connection to
+# notification-service will show "reconnecting" during a cold start rather
+# than hanging).
 
 databases:
   - name: healthsync-db
@@ -100,3 +110,64 @@ services:
           property: connectionString
       - key: JWT_PUBLIC_KEY_PATH
         value: /app/shared/keys/prod_jwt_public.pem
+
+  - type: web
+    name: healthsync-api-gateway
+    runtime: docker
+    plan: free
+    dockerfilePath: services/api-gateway/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PATIENT_SERVICE_URL
+        value: https://healthsync-patient-service.onrender.com
+      - key: LAB_SERVICE_URL
+        value: https://healthsync-lab-service.onrender.com
+      - key: AUDIT_SERVICE_URL
+        value: https://healthsync-audit-service.onrender.com
+      - key: REDIS_URL
+        fromService:
+          name: healthsync-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_PUBLIC_KEY_PATH
+        value: /app/shared/keys/prod_jwt_public.pem
+      - key: CORS_ORIGINS
+        value: https://healthsync-frontend.onrender.com
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RATE_LIMIT_MAX
+        value: "100"
+
+  - type: web
+    name: healthsync-notification-service
+    runtime: docker
+    plan: free
+    dockerfilePath: services/notification-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          name: healthsync-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_PUBLIC_KEY_PATH
+        value: /app/shared/keys/prod_jwt_public.pem
+      - key: CORS_ORIGINS
+        value: https://healthsync-frontend.onrender.com
+
+  - type: static
+    name: healthsync-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_GATEWAY_URL
+        value: https://healthsync-api-gateway.onrender.com
+      - key: VITE_NOTIFICATION_SERVICE_URL
+        value: https://healthsync-notification-service.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

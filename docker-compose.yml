@@ -1,9 +1,10 @@
-# Local dev stack for the services that actually exist today (patient-service,
-# lab-service, audit-service) on a single Postgres instance with one schema
-# per service, and Redis Streams standing in for Kafka — see
-# shared/sql/001_init.sql and shared/EVENTS.md for why. Ports/services here
-# will grow as analytics-service, notification-service, and api-gateway get
-# built out. Mirrors render.yaml for prod — keep the two in sync.
+# Local dev stack: patient/lab/audit-service, api-gateway, and
+# notification-service, on a single Postgres instance with one schema per
+# service, and Redis Streams standing in for Kafka — see
+# shared/sql/001_init.sql and shared/EVENTS.md for why. analytics-service is
+# still out of scope. No frontend block - run `npm run dev` directly from
+# frontend/ for hot reload; its vite.config.ts dev-server proxy points at
+# api-gateway on localhost:8000. Mirrors render.yaml for prod — keep in sync.
 
 services:
   postgres:
@@ -77,6 +78,40 @@ services:
       JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
     depends_on:
       postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./shared/keys:/secrets:ro
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    ports: ["8000:8000"]
+    environment:
+      PATIENT_SERVICE_URL: http://patient-service:8001
+      LAB_SERVICE_URL: http://lab-service:8002
+      AUDIT_SERVICE_URL: http://audit-service:8004
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+      CORS_ORIGINS: http://localhost:5173
+    depends_on:
+      redis: { condition: service_healthy }
+      patient-service: { condition: service_started }
+      lab-service: { condition: service_started }
+      audit-service: { condition: service_started }
+    volumes:
+      - ./shared/keys:/secrets:ro
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    ports: ["8003:8003"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+      CORS_ORIGINS: http://localhost:5173
+    depends_on:
       redis: { condition: service_healthy }
     volumes:
       - ./shared/keys:/secrets:ro
