@@ -133,7 +133,7 @@ services:
       - key: JWT_PUBLIC_KEY_PATH
         value: /app/shared/keys/prod_jwt_public.pem
       - key: CORS_ORIGINS
-        value: https://healthsync-frontend.onrender.com
+        value: https://healthsync-frontend-khoe.onrender.com
       - key: RATE_LIMIT_WINDOW_MS
         value: "60000"
       - key: RATE_LIMIT_MAX
@@ -155,8 +155,15 @@ services:
       - key: JWT_PUBLIC_KEY_PATH
         value: /app/shared/keys/prod_jwt_public.pem
       - key: CORS_ORIGINS
-        value: https://healthsync-frontend.onrender.com
+        value: https://healthsync-frontend-khoe.onrender.com
 
+  # onrender.com subdomains are global across all Render accounts, not just
+  # this one - "healthsync-frontend" was already taken, so this service's
+  # actual live URL is https://healthsync-frontend-khoe.onrender.com (the
+  # suffix Render appended), not the https://healthsync-frontend.onrender.com
+  # the `name` below would suggest. The CORS_ORIGINS values above use the
+  # real one; keep them in sync if this service ever gets recreated (a
+  # fresh create could get a different random suffix).
   - type: web
     name: healthsync-frontend
     runtime: static
