@@ -1,8 +1,9 @@
 # Local dev stack for the services that actually exist today (patient-service,
-# lab-service) on a single Postgres instance with one schema per service, and
-# Redis Streams standing in for Kafka — see shared/sql/001_init.sql and
-# shared/EVENTS.md for why. Ports/services here will grow as audit-service,
-# analytics-service, notification-service, and api-gateway get built out.
+# lab-service, audit-service) on a single Postgres instance with one schema
+# per service, and Redis Streams standing in for Kafka — see
+# shared/sql/001_init.sql and shared/EVENTS.md for why. Ports/services here
+# will grow as analytics-service, notification-service, and api-gateway get
+# built out. Mirrors render.yaml for prod — keep the two in sync.
 
 services:
   postgres:
@@ -56,6 +57,22 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://healthsync:dev_password@postgres:5432/healthsync
       DB_SCHEMA: lab
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./shared/keys:/secrets:ro
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: services/audit-service/Dockerfile
+    ports: ["8004:8004"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://healthsync:dev_password@postgres:5432/healthsync
+      DB_SCHEMA: audit
       REDIS_URL: redis://redis:6379
       JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
     depends_on:

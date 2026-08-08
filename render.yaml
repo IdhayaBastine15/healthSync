@@ -1,0 +1,104 @@
+# Render Blueprint — MVP deploy of the three services that are actually
+# built (patient-service, lab-service, audit-service) plus their shared
+# Postgres and Redis (Key Value). notification-service, api-gateway, and
+# frontend get added here once they exist.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
+# JWT_PRIVATE_KEY / JWT_PUBLIC_KEY are `sync: false` — Render will prompt for
+# them once during Blueprint creation; paste the PEM contents (see
+# scripts/generate_prod_keys.sh). Everything else wires up automatically.
+#
+# Free-tier caveats: free Postgres expires 30 days after creation (needs a
+# manual upgrade or recreation before then); free Key Value data is
+# in-memory only and clears on restart (fine here — it's just cache +
+# stream/dedup state, nothing durable lives there); free web services spin
+# down after 15 min idle and cold-start on the next request.
+
+databases:
+  - name: healthsync-db
+    databaseName: healthsync
+    user: healthsync
+    plan: free
+
+services:
+  - type: keyvalue
+    name: healthsync-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+  - type: web
+    name: healthsync-patient-service
+    runtime: docker
+    plan: free
+    dockerfilePath: services/patient-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: healthsync-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: patient
+      - key: REDIS_URL
+        fromService:
+          name: healthsync-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_PRIVATE_KEY_PATH
+        value: /secrets/jwt_private.pem
+      - key: JWT_PUBLIC_KEY_PATH
+        value: /secrets/jwt_public.pem
+      - key: JWT_PRIVATE_KEY
+        sync: false
+      - key: JWT_PUBLIC_KEY
+        sync: false
+
+  - type: web
+    name: healthsync-lab-service
+    runtime: docker
+    plan: free
+    dockerfilePath: services/lab-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: healthsync-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: lab
+      - key: REDIS_URL
+        fromService:
+          name: healthsync-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_PUBLIC_KEY_PATH
+        value: /secrets/jwt_public.pem
+      - key: JWT_PUBLIC_KEY
+        sync: false
+
+  - type: web
+    name: healthsync-audit-service
+    runtime: docker
+    plan: free
+    dockerfilePath: services/audit-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: healthsync-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: audit
+      - key: REDIS_URL
+        fromService:
+          name: healthsync-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_PUBLIC_KEY_PATH
+        value: /secrets/jwt_public.pem
+      - key: JWT_PUBLIC_KEY
+        sync: false
