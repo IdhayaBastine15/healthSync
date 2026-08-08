@@ -162,12 +162,18 @@ services:
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    # Per Render's published render.yaml JSON Schema (render.com/schema/render.yaml.json),
+    # staticPublishPath is relative to the repo root even when rootDir is
+    # set (rootDir only scopes where buildCommand runs) - validated against
+    # that schema directly after the dashboard's Blueprint sync error didn't
+    # surface the actual problem.
+    staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_GATEWAY_URL
         value: https://healthsync-api-gateway.onrender.com
       - key: VITE_NOTIFICATION_SERVICE_URL
         value: https://healthsync-notification-service.onrender.com
     routes:
-      - src: /.*
-        dest: /index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
