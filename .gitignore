@@ -13,6 +13,10 @@ node_modules/
 .env.*
 !.env.example
 shared/keys/*.pem
+# The prod public key isn't secret (only the private key is) - it's meant to
+# ship in the image so lab/audit/analytics-service don't need it pasted
+# through a web env var field. See render.yaml / services/*/Dockerfile.
+!shared/keys/prod_jwt_public.pem
 
 # OS
 .DS_Store

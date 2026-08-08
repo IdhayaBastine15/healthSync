@@ -1,0 +1,8 @@
+shared/keys/*.pem
+!shared/keys/prod_jwt_public.pem
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/node_modules/
+.git/

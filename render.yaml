@@ -4,9 +4,13 @@
 # frontend get added here once they exist.
 #
 # Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
-# JWT_PRIVATE_KEY / JWT_PUBLIC_KEY are `sync: false` — Render will prompt for
-# them once during Blueprint creation; paste the PEM contents (see
-# scripts/generate_prod_keys.sh). Everything else wires up automatically.
+# JWT_PRIVATE_KEY is `sync: false` — Render will prompt for it once during
+# Blueprint creation; paste the base64 of the PEM (see shared/entrypoint.sh
+# for why base64, and shared/keys/README for how to generate one). The
+# matching public key ships baked into every image at
+# shared/keys/prod_jwt_public.pem — it's not secret, so it doesn't need to
+# survive a round trip through a web form. Everything else wires up
+# automatically.
 #
 # Free-tier caveats: free Postgres expires 30 days after creation (needs a
 # manual upgrade or recreation before then); free Key Value data is
@@ -49,10 +53,8 @@ services:
       - key: JWT_PRIVATE_KEY_PATH
         value: /secrets/jwt_private.pem
       - key: JWT_PUBLIC_KEY_PATH
-        value: /secrets/jwt_public.pem
+        value: /app/shared/keys/prod_jwt_public.pem
       - key: JWT_PRIVATE_KEY
-        sync: false
-      - key: JWT_PUBLIC_KEY
         sync: false
 
   - type: web
@@ -75,9 +77,7 @@ services:
           type: keyvalue
           property: connectionString
       - key: JWT_PUBLIC_KEY_PATH
-        value: /secrets/jwt_public.pem
-      - key: JWT_PUBLIC_KEY
-        sync: false
+        value: /app/shared/keys/prod_jwt_public.pem
 
   - type: web
     name: healthsync-audit-service
@@ -99,6 +99,4 @@ services:
           type: keyvalue
           property: connectionString
       - key: JWT_PUBLIC_KEY_PATH
-        value: /secrets/jwt_public.pem
-      - key: JWT_PUBLIC_KEY
-        sync: false
+        value: /app/shared/keys/prod_jwt_public.pem
