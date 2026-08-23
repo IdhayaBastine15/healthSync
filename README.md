@@ -41,7 +41,6 @@ and tables.
 
 ### Getting a login
 
-Two ways in:
 
 **1. Sign up.** `POST /auth/register` (patient-service, proxied at
 `/api/v1/auth/register`) is a working self-signup endpoint — the frontend's
@@ -51,36 +50,6 @@ CONSULTANT, LAB_TECH, ADMIN, DATA_PROTECTION_OFFICER) — a deliberate
 demo-only trade-off (a real hospital provisions staff accounts via an
 admin, not self-service), documented in `services/patient-service/README.md`.
 
-**2. Demo credentials.** Seed one account per role instead:
-
-```bash
-DATABASE_URL=postgresql://healthsync:dev_password@localhost:5434/healthsync \
-  services/patient-service/.venv/bin/python scripts/db_bootstrap.py seed-demo
-```
-
-| Email | Password | Role |
-|---|---|---|
-| nurse@healthsync.ie | `DemoPass123!` | NURSE |
-| doctor@healthsync.ie | `DemoPass123!` | DOCTOR |
-| consultant@healthsync.ie | `DemoPass123!` | CONSULTANT |
-| labtech@healthsync.ie | `DemoPass123!` | LAB_TECH |
-| admin@healthsync.ie | `DemoPass123!` | ADMIN |
-| dpo@healthsync.ie | `DemoPass123!` | DATA_PROTECTION_OFFICER |
-
-Demo-only password, same for every account, committed in plaintext to this
-README on purpose — don't reuse it anywhere real. `scripts/db_bootstrap.py`
-also still has `seed-user` for a single custom account.
-
-Either way, `POST /auth/login` (or the frontend's `/login` page) returns a
-JWT; pass it as `Authorization: Bearer <token>` to any other service — they
-all verify against the same RSA keypair in `shared/keys/` and the same
-`shared/rbac.json`.
-
-There's no forgot-password flow — this stack has no email service to
-deliver a reset link (`services/notification-service/README.md` documents
-the same AWS SES/SNS gap for its own notification channels), so it's
-intentionally not implemented. Use demo credentials, or re-run `seed-user`/
-`seed-demo` to reset a password directly.
 
 ## Repo layout
 
