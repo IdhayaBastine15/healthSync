@@ -11,6 +11,7 @@ export function DashboardPage() {
     { to: '/patients', label: 'Patient Search', permission: 'PATIENT_READ' as const, desc: 'Find and view patient records' },
     { to: '/results/file', label: 'File Lab Result', permission: 'RESULT_FILE' as const, desc: 'Submit a new lab result' },
     { to: '/audit', label: 'Audit Log', permission: 'AUDIT_READ' as const, desc: 'Review system activity' },
+    { to: '/analytics', label: 'Analytics', permission: 'ANALYTICS_READ' as const, desc: 'Lab turnaround, critical alerts, system health' },
   ]
 
   return (

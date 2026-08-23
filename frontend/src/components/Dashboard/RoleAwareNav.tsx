@@ -34,6 +34,11 @@ export function RoleAwareNav() {
             Audit Log
           </NavLink>
         )}
+        {hasPermission(roles, 'ANALYTICS_READ') && (
+          <NavLink to="/analytics" className={linkClass}>
+            Analytics
+          </NavLink>
+        )}
       </div>
       <div className="flex items-center gap-3 text-sm text-slate-500">
         <span>{roles.join(', ')}</span>

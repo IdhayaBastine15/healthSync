@@ -11,6 +11,7 @@ import { PatientDetailPage } from './pages/PatientDetailPage'
 import { LabResultDetailPage } from './pages/LabResultDetailPage'
 import { FileLabResultPage } from './pages/FileLabResultPage'
 import { AuditLogPage } from './pages/AuditLogPage'
+import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage'
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -93,6 +94,17 @@ export default function App() {
             <ProtectedRoute requiredPermission="AUDIT_READ">
               <AuthenticatedLayout>
                 <AuditLogPage />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute requiredPermission="ANALYTICS_READ">
+              <AuthenticatedLayout>
+                <AnalyticsDashboardPage />
               </AuthenticatedLayout>
             </ProtectedRoute>
           }
