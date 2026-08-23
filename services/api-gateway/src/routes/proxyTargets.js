@@ -32,4 +32,5 @@ module.exports = {
   patientProxy: makeProxy(config.patientServiceUrl),
   labProxy: makeProxy(config.labServiceUrl),
   auditProxy: makeProxy(config.auditServiceUrl),
+  analyticsProxy: makeProxy(config.analyticsServiceUrl),
 };

@@ -12,6 +12,7 @@ module.exports = {
   patientServiceUrl: required("PATIENT_SERVICE_URL", "http://localhost:8001"),
   labServiceUrl: required("LAB_SERVICE_URL", "http://localhost:8002"),
   auditServiceUrl: required("AUDIT_SERVICE_URL", "http://localhost:8004"),
+  analyticsServiceUrl: required("ANALYTICS_SERVICE_URL", "http://localhost:8005"),
   redisUrl: required("REDIS_URL", "redis://localhost:6379"),
   jwtPublicKeyPath: required(
     "JWT_PUBLIC_KEY_PATH",

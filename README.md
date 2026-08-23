@@ -16,13 +16,17 @@ substitutes for the same architecture, no application code differs as a result.
 
 | Service | Language | Port | Status | README |
 |---|---|---|---|---|
-| patient-service | Python/FastAPI | 8001 | built, tested, runs | [services/patient-service/README.md](services/patient-service/README.md) |
-| lab-service | Python/FastAPI | 8002 | built, tested, runs | [services/lab-service/README.md](services/lab-service/README.md) |
-| audit-service | Python/FastAPI | 8004 | built, tested, runs | [services/audit-service/README.md](services/audit-service/README.md) |
-| analytics-service | Python/FastAPI+Pandas | 8005 | not started | — |
-| notification-service | Node/Express/Socket.io | 8003 | not started | — |
-| api-gateway | Node/Express | 8000 | not started | — |
-| frontend | React/Vite | 3000 | not started | — |
+| patient-service | Python/FastAPI | 8001 | built, tested, runs, deployed | [services/patient-service/README.md](services/patient-service/README.md) |
+| lab-service | Python/FastAPI | 8002 | built, tested, runs, deployed | [services/lab-service/README.md](services/lab-service/README.md) |
+| audit-service | Python/FastAPI | 8004 | built, tested, runs, deployed | [services/audit-service/README.md](services/audit-service/README.md) |
+| analytics-service | Python/FastAPI | 8005 | built, tested, runs, deployed | [services/analytics-service/README.md](services/analytics-service/README.md) |
+| notification-service | Node/Express/Socket.io | 8003 | built, tested, runs, deployed | [services/notification-service/README.md](services/notification-service/README.md) |
+| api-gateway | Node/Express | 8000 | built, tested, runs, deployed | — |
+| frontend | React/Vite | 3000 | built, deployed | — |
+
+Live (Render free tier — cold-starts after 15min idle): frontend at
+`healthsync-frontend-khoe.onrender.com`, api-gateway at
+`healthsync-api-gateway.onrender.com`; see `render.yaml` for the rest.
 
 ## Running locally
 

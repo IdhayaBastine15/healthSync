@@ -8,6 +8,7 @@
     "RESULT_FILE":         ["LAB_TECH", "ADMIN"],
     "RESULT_ACKNOWLEDGE":  ["NURSE", "DOCTOR", "CONSULTANT", "ADMIN"],
     "AUDIT_READ":          ["ADMIN", "DATA_PROTECTION_OFFICER"],
+    "ANALYTICS_READ":      ["ADMIN", "CONSULTANT"],
     "USER_MANAGE":         ["ADMIN"],
     "GDPR_REPORT":         ["DATA_PROTECTION_OFFICER"]
   }
