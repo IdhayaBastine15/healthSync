@@ -9,6 +9,7 @@ everyone else only has the public key).
 ## Endpoints
 
 ```
+POST   /auth/register                    → self-signup, returns access + refresh token (see below)
 POST   /auth/login                       → issue access + refresh token
 POST   /auth/refresh                     → exchange refresh token for a new access token
 POST   /auth/logout                      → blacklist the current access token (jti) in Redis
@@ -26,6 +27,22 @@ GET    /metrics                          → Prometheus
 
 RBAC (`shared/rbac.json`): `PATIENT_READ`, `PATIENT_WRITE`, `SENSITIVE_DATA`
 (gates whether `ppsn_hash` is included in the record response).
+
+## Self-signup
+
+`POST /auth/register` (`app/routers/auth.py`) is public — no token required
+— and lets the caller pick any role in `shared/rbac.json`'s `roles` list
+(`app/schemas/patient.py`'s `RegisterRequest` rejects anything else). There
+is **no admin-approval step**: a real hospital provisions clinical staff
+accounts via an admin, not self-service, but there's no admin-review flow
+in this codebase to gate signup behind, so this is a deliberate demo-only
+trade-off rather than an oversight — same spirit as `notification-service`'s
+"no email/SMS" scope note. On success it auto-logs-in (returns tokens
+immediately, same shape as `/auth/login`) and emits an `audit.event.logged`
+`REGISTER` event.
+
+Top-level README's "Demo credentials" section has both this and a
+pre-seeded account per role for anyone who doesn't want to sign up fresh.
 
 ## Events produced (`shared/EVENTS.md`)
 

@@ -47,6 +47,19 @@ describe("gateway proxy routing", () => {
     expect(res.body.access_token).toBe("tok");
   });
 
+  test("POST /api/v1/auth/register proxies to patient-service /auth/register without requiring a token", async () => {
+    nock("http://patient.test")
+      .post("/auth/register")
+      .reply(201, { access_token: "tok", refresh_token: "rtok", token_type: "bearer", expires_in: 900 });
+
+    const res = await request(app)
+      .post("/api/v1/auth/register")
+      .send({ email: "new@b.com", password: "password123", given_name: "A", family_name: "B", roles: ["NURSE"] });
+
+    expect(res.status).toBe(201);
+    expect(res.body.access_token).toBe("tok");
+  });
+
   test("GET /api/v1/patients/search requires auth and forwards the query string to patient-service", async () => {
     nock("http://patient.test").get("/patients/search?q=Smith").reply(200, [{ id: "p1" }]);
 

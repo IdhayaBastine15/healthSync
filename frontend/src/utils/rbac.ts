@@ -9,6 +9,7 @@ export const PERMISSIONS = {
   RESULT_FILE: ['LAB_TECH', 'ADMIN'],
   RESULT_ACKNOWLEDGE: ['NURSE', 'DOCTOR', 'CONSULTANT', 'ADMIN'],
   AUDIT_READ: ['ADMIN', 'DATA_PROTECTION_OFFICER'],
+  ANALYTICS_READ: ['ADMIN', 'CONSULTANT'],
   USER_MANAGE: ['ADMIN'],
   GDPR_REPORT: ['DATA_PROTECTION_OFFICER'],
 } as const
@@ -19,3 +20,6 @@ export function hasPermission(roles: string[], permission: Permission): boolean 
   const allowedRoles: readonly string[] = PERMISSIONS[permission]
   return roles.some((role) => allowedRoles.includes(role))
 }
+
+// shared/rbac.json's "roles" array - the full set a signup form may offer.
+export const ROLES = ['NURSE', 'DOCTOR', 'CONSULTANT', 'LAB_TECH', 'ADMIN', 'DATA_PROTECTION_OFFICER'] as const

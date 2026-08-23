@@ -1,7 +1,9 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.core.security import RBAC
 
 
 class LoginRequest(BaseModel):
@@ -18,6 +20,26 @@ class TokenResponse(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    given_name: str = Field(min_length=1, max_length=200)
+    family_name: str = Field(min_length=1, max_length=200)
+    roles: list[str] = Field(min_length=1)
+    department: str | None = None
+
+    @field_validator("roles")
+    @classmethod
+    def _roles_must_be_known(cls, v: list[str]) -> list[str]:
+        # No admin-approval step exists (see patient-service/README.md's
+        # "Self-signup" section for why) - this is the only gate stopping a
+        # signup from claiming a role outside shared/rbac.json's list.
+        unknown = set(v) - set(RBAC.get("roles", []))
+        if unknown:
+            raise ValueError(f"Unknown role(s): {', '.join(sorted(unknown))}")
+        return v
 
 
 class PatientCreate(BaseModel):
