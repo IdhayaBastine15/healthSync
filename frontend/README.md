@@ -13,14 +13,16 @@ React 18 · TypeScript · Vite 6 · Tailwind 4 · Zustand · React Router · Soc
 /results/file            → FileLabResultPage         (RESULT_FILE)
 /results/:id            → LabResultDetailPage        (RESULT_READ)
 /audit                  → AuditLogPage               (AUDIT_READ)
+/analytics               → AnalyticsDashboardPage     (ANALYTICS_READ)
 ```
 
 Route guarding is via `<ProtectedRoute requiredPermission="...">`
 (`src/components/Auth/ProtectedRoute.tsx`), checking the same
 `shared/rbac.json` permission names as every backend service — see
-`src/utils/rbac.ts`. There's no `/analytics` route yet — analytics-service
-is wired end-to-end through the gateway but this frontend has no dashboard
-page consuming it.
+`src/utils/rbac.ts`. `/analytics` (ADMIN, CONSULTANT only) covers all five
+analytics-service endpoints: the dashboard summary tiles, a 14-day patient
+record-activity bar chart, a date-range lab-turnaround/critical-alerts
+table, and consumer-lag (`/analytics/system-health`).
 
 ## Two backend connections
 
