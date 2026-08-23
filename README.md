@@ -21,8 +21,8 @@ substitutes for the same architecture, no application code differs as a result.
 | audit-service | Python/FastAPI | 8004 | built, tested, runs, deployed | [services/audit-service/README.md](services/audit-service/README.md) |
 | analytics-service | Python/FastAPI | 8005 | built, tested, runs, deployed | [services/analytics-service/README.md](services/analytics-service/README.md) |
 | notification-service | Node/Express/Socket.io | 8003 | built, tested, runs, deployed | [services/notification-service/README.md](services/notification-service/README.md) |
-| api-gateway | Node/Express | 8000 | built, tested, runs, deployed | — |
-| frontend | React/Vite | 3000 | built, deployed | — |
+| api-gateway | Node/Express | 8000 | built, tested, runs, deployed | [services/api-gateway/README.md](services/api-gateway/README.md) |
+| frontend | React/Vite | 3000 | built, deployed | [frontend/README.md](frontend/README.md) |
 
 Live (Render free tier — cold-starts after 15min idle): frontend at
 `healthsync-frontend-khoe.onrender.com`, api-gateway at
@@ -39,20 +39,48 @@ Brings up Postgres (host port **5434**, remapped from 5432 — see
 Postgres auto-runs `shared/sql/001_init.sql` on first boot to create schemas
 and tables.
 
-There's no `/auth/register` endpoint yet, so seed a test user directly:
+### Getting a login
 
-```sql
-INSERT INTO patient.users (email, password_hash, given_name, family_name, roles, is_active)
-VALUES ('doctor@healthsync.ie', '<bcrypt-hash>', 'Ada', 'Byrne', ARRAY['DOCTOR'], true);
+Two ways in:
+
+**1. Sign up.** `POST /auth/register` (patient-service, proxied at
+`/api/v1/auth/register`) is a working self-signup endpoint — the frontend's
+`/signup` page uses it. No admin-approval step exists, so it lets the
+signer pick any role in `shared/rbac.json`'s list (NURSE, DOCTOR,
+CONSULTANT, LAB_TECH, ADMIN, DATA_PROTECTION_OFFICER) — a deliberate
+demo-only trade-off (a real hospital provisions staff accounts via an
+admin, not self-service), documented in `services/patient-service/README.md`.
+
+**2. Demo credentials.** Seed one account per role instead:
+
+```bash
+DATABASE_URL=postgresql://healthsync:dev_password@localhost:5434/healthsync \
+  services/patient-service/.venv/bin/python scripts/db_bootstrap.py seed-demo
 ```
 
-(generate the hash with `bcrypt.hashpw(b'password', bcrypt.gensalt(rounds=12))`
-in any service's venv — they all depend on `bcrypt`/`passlib`-compatible hashing
-via `core/security.py`).
+| Email | Password | Role |
+|---|---|---|
+| nurse@healthsync.ie | `DemoPass123!` | NURSE |
+| doctor@healthsync.ie | `DemoPass123!` | DOCTOR |
+| consultant@healthsync.ie | `DemoPass123!` | CONSULTANT |
+| labtech@healthsync.ie | `DemoPass123!` | LAB_TECH |
+| admin@healthsync.ie | `DemoPass123!` | ADMIN |
+| dpo@healthsync.ie | `DemoPass123!` | DATA_PROTECTION_OFFICER |
 
-Then `POST /auth/login` against patient-service to get a JWT, and pass it as
-`Authorization: Bearer <token>` to any other service — they all verify against
-the same RSA keypair in `shared/keys/` and the same `shared/rbac.json`.
+Demo-only password, same for every account, committed in plaintext to this
+README on purpose — don't reuse it anywhere real. `scripts/db_bootstrap.py`
+also still has `seed-user` for a single custom account.
+
+Either way, `POST /auth/login` (or the frontend's `/login` page) returns a
+JWT; pass it as `Authorization: Bearer <token>` to any other service — they
+all verify against the same RSA keypair in `shared/keys/` and the same
+`shared/rbac.json`.
+
+There's no forgot-password flow — this stack has no email service to
+deliver a reset link (`services/notification-service/README.md` documents
+the same AWS SES/SNS gap for its own notification channels), so it's
+intentionally not implemented. Use demo credentials, or re-run `seed-user`/
+`seed-demo` to reset a password directly.
 
 ## Repo layout
 

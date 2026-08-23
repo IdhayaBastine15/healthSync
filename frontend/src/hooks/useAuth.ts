@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { login as loginRequest, logout as logoutRequest } from '../services/auth'
+import { login as loginRequest, logout as logoutRequest, register as registerRequest } from '../services/auth'
 import { api } from '../services/api'
 import { connectSocket, disconnectSocket } from '../services/socket'
-import type { LoginRequest, TokenResponse } from '../types/auth'
+import type { LoginRequest, RegisterRequest, TokenResponse } from '../types/auth'
 
 export function useAuth() {
   const navigate = useNavigate()
@@ -51,6 +51,15 @@ export function useAuth() {
     [setTokens, navigate],
   )
 
+  const register = useCallback(
+    async (body: RegisterRequest) => {
+      const tokens = await registerRequest(body)
+      setTokens(tokens)
+      navigate('/dashboard')
+    },
+    [setTokens, navigate],
+  )
+
   const logout = useCallback(async () => {
     try {
       await logoutRequest()
@@ -69,6 +78,7 @@ export function useAuth() {
     roles,
     isAuthenticated: isAuthenticated(),
     login,
+    register,
     logout,
   }
 }
