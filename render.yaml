@@ -1,7 +1,7 @@
-# Render Blueprint — the full stack: patient/lab/audit-service, api-gateway
-# (single entry point), notification-service (real-time critical alerts via
-# Socket.io), the React frontend (static site), and their shared Postgres and
-# Redis (Key Value). analytics-service is still out of scope.
+# Render Blueprint — the full stack: patient/lab/audit/analytics-service,
+# api-gateway (single entry point), notification-service (real-time critical
+# alerts via Socket.io), the React frontend (static site), and their shared
+# Postgres and Redis (Key Value).
 #
 # Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
 # JWT_PRIVATE_KEY is `sync: false` — Render will prompt for it once during
@@ -112,6 +112,28 @@ services:
         value: /app/shared/keys/prod_jwt_public.pem
 
   - type: web
+    name: healthsync-analytics-service
+    runtime: docker
+    plan: free
+    dockerfilePath: services/analytics-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: healthsync-db
+          property: connectionString
+      - key: DB_SCHEMA
+        value: analytics
+      - key: REDIS_URL
+        fromService:
+          name: healthsync-redis
+          type: keyvalue
+          property: connectionString
+      - key: JWT_PUBLIC_KEY_PATH
+        value: /app/shared/keys/prod_jwt_public.pem
+
+  - type: web
     name: healthsync-api-gateway
     runtime: docker
     plan: free
@@ -125,6 +147,8 @@ services:
         value: https://healthsync-lab-service.onrender.com
       - key: AUDIT_SERVICE_URL
         value: https://healthsync-audit-service.onrender.com
+      - key: ANALYTICS_SERVICE_URL
+        value: https://healthsync-analytics-service.onrender.com
       - key: REDIS_URL
         fromService:
           name: healthsync-redis

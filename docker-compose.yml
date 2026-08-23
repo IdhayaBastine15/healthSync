@@ -1,10 +1,10 @@
-# Local dev stack: patient/lab/audit-service, api-gateway, and
+# Local dev stack: patient/lab/audit/analytics-service, api-gateway, and
 # notification-service, on a single Postgres instance with one schema per
 # service, and Redis Streams standing in for Kafka — see
-# shared/sql/001_init.sql and shared/EVENTS.md for why. analytics-service is
-# still out of scope. No frontend block - run `npm run dev` directly from
-# frontend/ for hot reload; its vite.config.ts dev-server proxy points at
-# api-gateway on localhost:8000. Mirrors render.yaml for prod — keep in sync.
+# shared/sql/001_init.sql and shared/EVENTS.md for why. No frontend block -
+# run `npm run dev` directly from frontend/ for hot reload; its
+# vite.config.ts dev-server proxy points at api-gateway on localhost:8000.
+# Mirrors render.yaml for prod — keep in sync.
 
 services:
   postgres:
@@ -82,6 +82,22 @@ services:
     volumes:
       - ./shared/keys:/secrets:ro
 
+  analytics-service:
+    build:
+      context: .
+      dockerfile: services/analytics-service/Dockerfile
+    ports: ["8005:8005"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://healthsync:dev_password@postgres:5432/healthsync
+      DB_SCHEMA: analytics
+      REDIS_URL: redis://redis:6379
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ./shared/keys:/secrets:ro
+
   api-gateway:
     build:
       context: .
@@ -91,6 +107,7 @@ services:
       PATIENT_SERVICE_URL: http://patient-service:8001
       LAB_SERVICE_URL: http://lab-service:8002
       AUDIT_SERVICE_URL: http://audit-service:8004
+      ANALYTICS_SERVICE_URL: http://analytics-service:8005
       REDIS_URL: redis://redis:6379
       JWT_PUBLIC_KEY_PATH: /secrets/jwt_public.pem
       CORS_ORIGINS: http://localhost:5173
@@ -99,6 +116,7 @@ services:
       patient-service: { condition: service_started }
       lab-service: { condition: service_started }
       audit-service: { condition: service_started }
+      analytics-service: { condition: service_started }
     volumes:
       - ./shared/keys:/secrets:ro
 

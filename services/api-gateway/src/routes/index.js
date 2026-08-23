@@ -5,7 +5,7 @@
 // each FastAPI service via shared/rbac.json (single source of truth).
 const express = require("express");
 const { requireAuth } = require("../middleware/auth");
-const { patientProxy, labProxy, auditProxy } = require("./proxyTargets");
+const { patientProxy, labProxy, auditProxy, analyticsProxy } = require("./proxyTargets");
 
 const router = express.Router();
 
@@ -18,5 +18,7 @@ router.use("/api/v1/patients", requireAuth, patientProxy);
 router.use(["/api/v1/results", "/api/v1/panels", "/api/v1/reference-ranges"], requireAuth, labProxy);
 
 router.use("/api/v1/audit", requireAuth, auditProxy);
+
+router.use("/api/v1/analytics", requireAuth, analyticsProxy);
 
 module.exports = router;
